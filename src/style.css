@@ -91,7 +91,7 @@ body {
 .hero-kicker {
   font-size: 12px;
   letter-spacing: 0.42em;
-  color: var(--muted);
+  color: #55647a;
   margin-bottom: 20px;
 }
 
@@ -109,7 +109,7 @@ body {
   margin-top: 16px;
   font-size: clamp(17px, 2.2vw, 24px);
   letter-spacing: 0.5em;
-  color: var(--muted);
+  color: #33455c;
   text-indent: 0.5em;
 }
 
@@ -117,7 +117,7 @@ body {
   margin-top: 20px;
   font-size: 14px;
   letter-spacing: 0.22em;
-  color: var(--accent);
+  color: #28598c;
 }
 
 .hero-hint {

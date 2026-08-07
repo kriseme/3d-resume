@@ -53,7 +53,7 @@ export const resume: ResumeData = {
     {
       period: '2024.09 – 2026.06',
       title: '中国农业大学',
-      subtitle: '电气工程 · 硕士在读',
+      subtitle: '电气工程 · 硕士',
       description:
         '专业排名 1/30（GPA 3.82）；研究方向：配电网电弧故障检测与电力设备在线监测。',
     },

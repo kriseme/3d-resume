@@ -79,7 +79,21 @@ export function renderResume(data: ResumeData): void {
 
   setHtml(
     '#resume-inner',
-    `
+    (() => {
+      const contactItems = (
+        [
+          ['邮箱', data.contact.email],
+          ['电话', data.contact.phone],
+          ['城市', data.contact.location],
+          ['GitHub', data.contact.github],
+        ] as const
+      ).filter(([, value]) => value && value !== '待补充');
+      const contactHtml = contactItems.length
+        ? `<div class="resume-contact">${contactItems
+            .map(([label, value]) => `<span>${label} ${escapeHtml(value)}</span>`)
+            .join('')}</div>`
+        : '';
+      return `
     <header class="resume-head">
       <div>
         <h2 class="resume-name-en">${escapeHtml(data.nameEn)}</h2>
@@ -87,12 +101,7 @@ export function renderResume(data: ResumeData): void {
       </div>
       <p class="resume-tagline">${escapeHtml(data.tagline)}</p>
     </header>
-    <div class="resume-contact">
-      <span>邮箱 ${escapeHtml(data.contact.email)}</span>
-      <span>电话 ${escapeHtml(data.contact.phone)}</span>
-      <span>城市 ${escapeHtml(data.contact.location)}</span>
-      <span>GitHub ${escapeHtml(data.contact.github)}</span>
-    </div>
+    ${contactHtml}
     <p class="resume-summary">${escapeHtml(data.summary)}</p>
     <section class="resume-section">
       <h3>EDUCATION · 教育经历</h3>
@@ -141,6 +150,7 @@ export function renderResume(data: ResumeData): void {
           </div>`,
         )
         .join('')}
-    </section>`,
+    </section>`;
+    })(),
   );
 }
