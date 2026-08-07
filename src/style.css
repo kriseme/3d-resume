@@ -477,6 +477,65 @@ body {
   background: var(--accent);
 }
 
+/* PDF 单页生成时的紧凑排版 */
+#pdf-clone {
+  font-size: 13px;
+}
+
+#pdf-clone .resume-name-en {
+  font-size: 24px;
+}
+
+#pdf-clone .resume-name-zh {
+  font-size: 12px;
+}
+
+#pdf-clone .resume-head {
+  padding-bottom: 12px;
+}
+
+#pdf-clone .resume-contact {
+  margin-top: 10px;
+  gap: 6px 20px;
+}
+
+#pdf-clone .resume-summary {
+  margin-top: 12px;
+  padding: 10px 12px;
+  line-height: 1.6;
+}
+
+#pdf-clone .resume-section {
+  margin-top: 14px;
+}
+
+#pdf-clone .resume-section h3 {
+  margin-bottom: 8px;
+}
+
+#pdf-clone .resume-item {
+  margin-bottom: 8px;
+}
+
+#pdf-clone .resume-item .item-desc {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+#pdf-clone .tags {
+  gap: 6px;
+}
+
+#pdf-clone .tag {
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+#pdf-clone .honor-row {
+  padding: 5px 0;
+  font-size: 12px;
+}
+
 /* mobile */
 @media (max-width: 767px) {
   .chapter {

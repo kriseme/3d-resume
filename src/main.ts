@@ -486,8 +486,8 @@ async function downloadResumePdf(): Promise<void> {
     'position:fixed',
     'left:-9999px',
     'top:0',
-    'width:794px',
-    'padding:48px',
+    'width:760px',
+    'padding:36px',
     'background:#ffffff',
     'overflow:visible',
     'transform:none',
@@ -507,20 +507,12 @@ async function downloadResumePdf(): Promise<void> {
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const pageWidth = 210;
     const pageHeight = 297;
-    const imageWidth = pageWidth;
-    const imageHeight = (canvas.height * pageWidth) / canvas.width;
     const imageData = canvas.toDataURL('image/jpeg', 0.95);
-    let heightLeft = imageHeight;
-    let position = 0;
-    pdf.addImage(imageData, 'JPEG', 0, position, imageWidth, imageHeight);
-    heightLeft -= pageHeight;
-    while (heightLeft > 0) {
-      position -= pageHeight;
-      pdf.addPage();
-      pdf.addImage(imageData, 'JPEG', 0, position, imageWidth, imageHeight);
-      heightLeft -= pageHeight;
-    }
-    pdf.save('我的简历.pdf');
+    const fit = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+    const imageWidth = canvas.width * fit;
+    const imageHeight = canvas.height * fit;
+    pdf.addImage(imageData, 'JPEG', (pageWidth - imageWidth) / 2, 0, imageWidth, imageHeight);
+    pdf.save(`${resume.nameZh}-${resume.role}-简历.pdf`);
   } finally {
     clone.remove();
   }

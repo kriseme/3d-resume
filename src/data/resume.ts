@@ -37,52 +37,79 @@ export interface ResumeData {
 }
 
 export const resume: ResumeData = {
-  nameEn: 'ZHANG SAN',
-  nameZh: '张三',
-  role: '前端开发工程师',
-  tagline: '用代码构建有温度的体验',
+  nameEn: 'YINA CHANG',
+  nameZh: '畅艺娜',
+  role: '电气设计工程师',
+  tagline: '专注配电网故障检测与电力设备在线监测',
   summary:
-    '三年以上前端开发经验，擅长 3D 可视化与交互动画，乐于把复杂数据变成直观、有温度的体验。',
+    '电气工程硕士在读，专业排名 1/30（GPA 3.82）；熟悉需求分析、方案设计、原理图/PCB 设计、样机测试到现场验证的完整研发流程；参与多项国网科技项目并驻场实习，持有实用新型专利 2 项、软件著作权 3 项。',
   contact: {
-    email: 'zhangsan@example.com',
-    phone: '138-0000-0000',
-    location: '中国 · 上海',
-    github: 'github.com/zhangsan',
+    email: '待补充',
+    phone: '待补充',
+    location: '中国',
+    github: '待补充',
   },
   education: [
     {
-      period: '2019.09 – 2023.06',
-      title: '示例大学',
-      subtitle: '计算机科学与技术 · 本科',
-      description: '主修 Web 开发与计算机图形学，GPA 3.8 / 4.0，毕业设计获校级优秀。',
+      period: '2024.09 – 2026.06',
+      title: '中国农业大学',
+      subtitle: '电气工程 · 硕士在读',
+      description:
+        '专业排名 1/30（GPA 3.82）；研究方向：配电网电弧故障检测与电力设备在线监测。',
+    },
+    {
+      period: '2018.09 – 2022.06',
+      title: '福建师范大学',
+      subtitle: '通信工程 · 学士',
+      description:
+        '主修电路原理、数字电路、单片机与嵌入式系统、C 语言程序设计、电力电子技术。',
     },
   ],
   projects: [
     {
-      name: '示例项目 · 3D 可视化平台',
-      period: '2024.01 – 2024.06',
-      role: '前端负责人',
-      description: '基于 Three.js 与 React 搭建实时数据可视化大屏，负责渲染性能优化与交互动效设计。',
+      name: '配电网电弧故障在线探测装置研发',
+      period: '2025.02 – 至今',
+      role: '研究生课题 · 独立完成',
+      description:
+        '独立完成电气方案设计、原理图/PCB 设计与打样、阻抗匹配调试；基于 HFSS 优化天线增益至 2.1 dBi，开发 STM32 检测电路，误报率 < 5%。',
     },
     {
-      name: '示例项目 · 简历生成器',
-      period: '2023.08 – 2023.12',
-      role: '独立开发',
-      description: '输入数据即可生成个性化简历页面的工具，支持主题切换与一键打印。',
+      name: '低压配电网状态精准感知与故障快速自愈技术研究及应用',
+      period: '2024.09 – 至今',
+      role: '国网北京电科院项目',
+      description:
+        '参与“云—边—端”三级感知模型建设，负责数据采集模块设计开发，并开发边缘计算节点与物联网云平台。',
+    },
+    {
+      name: '国网平谷供电公司（科技小院）',
+      period: '2025.02 – 2025.09',
+      role: '电气工程实习生 · 学生团队负责人',
+      description:
+        '驻场对接甲方与校方，按期交付 6 份测试报告；解决现场蓝牙 Mesh 通信干扰问题，完成 3 套监控系统安装与运维培训。',
     },
   ],
   skills: [
-    'TypeScript',
-    'React',
-    'Three.js',
-    'WebGL',
-    'Node.js',
-    'Vite',
-    'GSAP',
-    'UI/UX 设计',
+    '电气设计',
+    '原理图/PCB（Multisim）',
+    '多层板与 EMC 整改',
+    'AutoCAD',
+    'HFSS',
+    'STM32/Keil',
+    'C / Python',
+    '传感器采集与串口调试',
+    '示波器/频谱仪调试',
+    'Word/Excel/PPT/Visio',
+    'CET-6',
+    '计算机二级',
   ],
   honors: [
-    { name: '校级一等奖学金', year: '2023', issuer: '示例大学' },
-    { name: '前端开发优秀新人奖', year: '2024', issuer: '示例公司' },
+    {
+      name: '全国大学生等离子体科技创新竞赛 全国二等奖（国家级 A 类）',
+      year: '2025',
+      issuer: '全国大学生等离子体科技创新竞赛',
+    },
+    { name: '硕士学业一等奖学金', year: '在读期间', issuer: '中国农业大学' },
+    { name: '实用新型专利 2 项、软件著作权 3 项', year: '在读期间' },
+    { name: '院学生会主席 / 硕士班班长 / 实验教学助教', year: '在读期间' },
   ],
 };
