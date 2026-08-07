@@ -140,6 +140,12 @@ function computeFraming(): void {
   const halfH1 = (top1 - bottom1) / 2;
   camZ1 = halfH1 / Math.tan(THREE.MathUtils.degToRad(FOV0 / 2));
 
+  // 无论桌面还是移动端，都应用人物居中取景
+  camera.position.set(0, camY0, camZ0);
+  camera.fov = FOV0;
+  camera.lookAt(0, camY0, 0);
+  camera.updateProjectionMatrix();
+
   if (isDesktopQuery.matches) updateProgress(lastProgress);
 }
 
