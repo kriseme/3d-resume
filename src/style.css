@@ -582,13 +582,19 @@ body {
     display: none;
   }
 
+  .hero-hint {
+    display: none;
+  }
+
   .print-btn {
-    right: 16px;
+    left: 16px;
+    right: auto;
     bottom: 16px;
   }
 
   .download-btn {
-    right: 16px;
+    left: 16px;
+    right: auto;
     bottom: 76px;
   }
 
