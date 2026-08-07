@@ -472,7 +472,92 @@ document.querySelectorAll<HTMLElement>('.progress-dot').forEach((dot) => {
   });
 });
 
-document.querySelector('#print-btn')?.addEventListener('click', () => window.print());
+async function downloadResumePdf(): Promise<void> {
+  const source = document.querySelector<HTMLElement>('#resume-card');
+  if (!source) return;
+  const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
+
+  const clone = source.cloneNode(true) as HTMLElement;
+  clone.id = 'pdf-clone';
+  clone.style.cssText = [
+    'position:fixed',
+    'left:-9999px',
+    'top:0',
+    'width:794px',
+    'padding:48px',
+    'background:#ffffff',
+    'overflow:visible',
+    'transform:none',
+    'box-shadow:none',
+    'border-radius:0',
+    'max-height:none',
+    'height:auto',
+  ].join(';');
+  document.body.appendChild(clone);
+
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+    });
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const imageWidth = pageWidth;
+    const imageHeight = (canvas.height * pageWidth) / canvas.width;
+    const imageData = canvas.toDataURL('image/jpeg', 0.95);
+    let heightLeft = imageHeight;
+    let position = 0;
+    pdf.addImage(imageData, 'JPEG', 0, position, imageWidth, imageHeight);
+    heightLeft -= pageHeight;
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imageData, 'JPEG', 0, position, imageWidth, imageHeight);
+      heightLeft -= pageHeight;
+    }
+    pdf.save('我的简历.pdf');
+  } finally {
+    clone.remove();
+  }
+}
+
+async function runDownloadWithFeedback(): Promise<void> {
+  const button = document.querySelector<HTMLButtonElement>('#download-btn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = '生成中…';
+  }
+  try {
+    await downloadResumePdf();
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = '下载 PDF';
+    }
+  }
+}
+
+let printEventFired = false;
+window.addEventListener('beforeprint', () => {
+  printEventFired = true;
+});
+
+document.querySelector('#print-btn')?.addEventListener('click', () => {
+  printEventFired = false;
+  window.print();
+  window.setTimeout(() => {
+    if (!printEventFired) void runDownloadWithFeedback();
+  }, 400);
+});
+
+document.querySelector('#download-btn')?.addEventListener('click', () => {
+  void runDownloadWithFeedback();
+});
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

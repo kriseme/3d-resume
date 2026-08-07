@@ -471,6 +471,12 @@ body {
   transform: translateY(-2px);
 }
 
+.download-btn {
+  right: 24px;
+  bottom: 84px;
+  background: var(--accent);
+}
+
 /* mobile */
 @media (max-width: 767px) {
   .chapter {
@@ -520,6 +526,11 @@ body {
   .print-btn {
     right: 16px;
     bottom: 16px;
+  }
+
+  .download-btn {
+    right: 16px;
+    bottom: 76px;
   }
 
   .chapter.final {
