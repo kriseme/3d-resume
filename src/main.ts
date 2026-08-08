@@ -19,8 +19,16 @@ const timelineSection = document.querySelector<HTMLElement>('#chapter-timeline')
 const FAST_VIDEO_PROXIES = [
   'https://ghproxy.net/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://ghfast.top/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+  'https://gh-proxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+  'https://ghproxy.cc/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
 ];
 const FAST_VIDEO_TIMEOUT_MS = 10000;
+
+function pickVideoFile(): string {
+  const touchPrimary = window.matchMedia('(pointer: coarse)').matches;
+  const smallTouch = navigator.maxTouchPoints > 0 && window.innerWidth <= 1024;
+  return touchPrimary || smallTouch ? 'mobile.mp4' : 'landing.mp4';
+}
 
 if (!track) {
   throw new Error('Missing required <main id="track"> element');
@@ -397,9 +405,13 @@ async function tryFastVideoProxy(): Promise<void> {
   const lang = (navigator.language || navigator.languages?.[0] || '').toLowerCase();
   if (!lang.startsWith('zh')) return;
 
-  const fileName = window.matchMedia('(max-width: 767px)').matches ? 'mobile.mp4' : 'landing.mp4';
+  const fileName = pickVideoFile();
   const raw = await fetchFastVideo(fileName);
-  if (!raw) return;
+  if (!raw) {
+    video.src = `videos/${fileName}`;
+    video.load();
+    return;
+  }
 
   const mp4 = new Blob([raw], { type: 'video/mp4' });
   proxyVideoActive = true;
@@ -465,6 +477,7 @@ video?.addEventListener('error', () => {
   if (proxyVideoActive) {
     proxyVideoActive = false;
     video?.removeAttribute('src');
+    video!.src = `videos/${pickVideoFile()}`;
     video?.load();
   }
 });
