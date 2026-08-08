@@ -21,8 +21,11 @@ const FAST_VIDEO_PROXIES = [
   'https://ghfast.top/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://gh-proxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://ghproxy.cc/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+  'https://mirror.ghproxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+  'https://gh.llkk.cc/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
 ];
-const FAST_VIDEO_TIMEOUT_MS = 10000;
+const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+const FAST_VIDEO_TIMEOUT_MS = isWeChat ? 15000 : 10000;
 
 function pickVideoFile(): string {
   const touchPrimary = window.matchMedia('(pointer: coarse)').matches;
@@ -301,6 +304,7 @@ let clickLockUntil = 0;
 let pointerDownX = -1;
 let pointerDownY = -1;
 let pointerMoved = false;
+let lastPointerEventAt = -1000;
 
 function frameFromClientX(clientX: number): number {
   if (videoMaxFrame <= 0) return 0;
@@ -350,7 +354,6 @@ function pumpVideoScrub(): void {
     return;
   }
   lastRequestedFrame = frame;
-  scrubBusy = true;
   lastSeekStartedAt = now;
   activeSeekToken = ++seekToken;
   try {
@@ -488,34 +491,32 @@ if (video?.readyState != null && video.readyState >= 1) {
 
 void tryFastVideoProxy();
 
-window.addEventListener('pointerdown', (event) => {
-  pointerDownX = event.clientX;
-  pointerDownY = event.clientY;
+function onPointerDown(clientX: number, clientY: number, isTouch: boolean): void {
+  pointerDownX = clientX;
+  pointerDownY = clientY;
   pointerMoved = false;
-  if (event.pointerType === 'touch') touchScrubbing = true;
-});
+  if (isTouch) touchScrubbing = true;
+}
 
-window.addEventListener('pointermove', (event) => {
+function onPointerMove(clientX: number, clientY: number, isTouch: boolean): void {
   if (
     pointerDownX >= 0 &&
-    Math.hypot(event.clientX - pointerDownX, event.clientY - pointerDownY) > 8
+    Math.hypot(clientX - pointerDownX, clientY - pointerDownY) > 8
   ) {
     pointerMoved = true;
   }
-  if (event.pointerType === 'touch' && !touchScrubbing) return;
-  queueVideoScrub(event.clientX);
-});
+  if (isTouch && !touchScrubbing) return;
+  queueVideoScrub(clientX);
+}
 
-window.addEventListener('pointerup', (event) => {
+function onPointerUp(clientX: number, clientY: number): void {
   const wasClick = pointerDownX >= 0 && !pointerMoved;
-  const clickX = event.clientX;
-  const clickY = event.clientY;
   pointerDownX = -1;
   pointerDownY = -1;
   pointerMoved = false;
   touchScrubbing = false;
-  if (wasClick && isCenterCharacterHit(clickX, clickY)) {
-    spawnBlessing(clickX, clickY - 40);
+  if (wasClick && isCenterCharacterHit(clientX, clientY)) {
+    spawnBlessing(clientX, clientY - 40);
     return;
   }
   if (wasClick) {
@@ -524,14 +525,58 @@ window.addEventListener('pointerup', (event) => {
     return;
   }
   flushVideoScrub();
-});
+}
 
-window.addEventListener('pointercancel', () => {
+function onPointerCancel(): void {
   pointerDownX = -1;
   pointerDownY = -1;
   pointerMoved = false;
   touchScrubbing = false;
   flushVideoScrub();
+}
+
+window.addEventListener('pointerdown', (event) => {
+  lastPointerEventAt = performance.now();
+  onPointerDown(event.clientX, event.clientY, event.pointerType === 'touch');
+});
+
+window.addEventListener('pointermove', (event) => {
+  lastPointerEventAt = performance.now();
+  onPointerMove(event.clientX, event.clientY, event.pointerType === 'touch');
+});
+
+window.addEventListener('pointerup', (event) => {
+  lastPointerEventAt = performance.now();
+  onPointerUp(event.clientX, event.clientY);
+});
+
+window.addEventListener('pointercancel', () => {
+  lastPointerEventAt = performance.now();
+  onPointerCancel();
+});
+
+// 微信等 WebView 若不派发 PointerEvent，用 TouchEvent 兜底
+window.addEventListener('touchstart', (event) => {
+  if (performance.now() - lastPointerEventAt < 50) return;
+  const touch = event.changedTouches[0];
+  if (touch) onPointerDown(touch.clientX, touch.clientY, true);
+}, { passive: true });
+
+window.addEventListener('touchmove', (event) => {
+  if (performance.now() - lastPointerEventAt < 50) return;
+  const touch = event.changedTouches[0];
+  if (touch) onPointerMove(touch.clientX, touch.clientY, true);
+}, { passive: true });
+
+window.addEventListener('touchend', (event) => {
+  if (performance.now() - lastPointerEventAt < 50) return;
+  const touch = event.changedTouches[0];
+  if (touch) onPointerUp(touch.clientX, touch.clientY);
+}, { passive: true });
+
+window.addEventListener('touchcancel', () => {
+  if (performance.now() - lastPointerEventAt < 50) return;
+  onPointerCancel();
 });
 
 window.addEventListener('blur', () => {
