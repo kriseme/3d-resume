@@ -306,6 +306,10 @@ let pointerDownX = -1;
 let pointerDownY = -1;
 let pointerMoved = false;
 let lastPointerEventAt = -1000;
+let debugEl: HTMLDivElement | null = null;
+let lastVideoError = '';
+let touchMoveCount = 0;
+let scrubCallCount = 0;
 
 function frameFromClientX(clientX: number): number {
   if (videoMaxFrame <= 0) return 0;
@@ -366,6 +370,7 @@ function pumpVideoScrub(): void {
 }
 
 function queueVideoScrub(clientX: number): void {
+  scrubCallCount += 1;
   if (!videoReady || !heroInteractive) return;
   const frame = frameFromClientX(clientX);
   if (frame === lastPointerFrame) return;
@@ -406,9 +411,6 @@ function initVideo(): void {
 
 async function tryFastVideoSource(): Promise<void> {
   if (!video) return;
-  const lang = (navigator.language || navigator.languages?.[0] || '').toLowerCase();
-  if (!lang.startsWith('zh')) return;
-
   const fileName = pickVideoFile();
   videoSourceStage = 'cos';
   video.src = `${COS_VIDEO_BASE}${fileName}`;
@@ -464,6 +466,30 @@ function fetchFastVideo(fileName: string): Promise<Blob | null> {
   });
 }
 
+function initDebugPanel(): void {
+  if (!new URLSearchParams(window.location.search).has('debug')) return;
+  const el = document.createElement('div');
+  el.id = 'video-debug';
+  el.style.cssText =
+    'position:fixed;left:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.78);' +
+    'color:#0f0;font:11px/1.5 monospace;padding:8px 10px;border-radius:6px;' +
+    'max-width:92vw;pointer-events:none;white-space:pre-wrap;';
+  document.body.appendChild(el);
+  debugEl = el;
+  window.setInterval(() => {
+    if (!debugEl || !video) return;
+    debugEl.textContent = [
+      `stage=${videoSourceStage}`,
+      `ready=${video.readyState} net=${video.networkState}`,
+      `src=${video.currentSrc || '(none)'}`,
+      `dur=${Number.isFinite(video.duration) ? video.duration.toFixed(2) : '-'} maxF=${videoMaxFrame}`,
+      `videoReady=${videoReady}`,
+      `touchMove=${touchMoveCount} scrub=${scrubCallCount}`,
+      `err=${lastVideoError || '-'}`,
+    ].join('\n');
+  }, 400);
+}
+
 video?.addEventListener('loadedmetadata', () => {
   initVideo();
 });
@@ -486,6 +512,7 @@ video?.addEventListener('seeked', () => {
 video?.addEventListener('error', () => {
   videoReady = false;
   scrubBusy = false;
+  lastVideoError = video?.error ? `code=${video.error.code} ${video.error.message}` : 'error';
   if (videoSourceStage === 'cos') {
     videoSourceStage = 'github';
     video?.removeAttribute('src');
@@ -504,6 +531,7 @@ if (video?.readyState != null && video.readyState >= 1) {
   initVideo();
 }
 
+initDebugPanel();
 void tryFastVideoSource();
 
 function onPointerDown(clientX: number, clientY: number, isTouch: boolean): void {
@@ -580,8 +608,17 @@ window.addEventListener('touchstart', (event) => {
 window.addEventListener('touchmove', (event) => {
   if (performance.now() - lastPointerEventAt < 50) return;
   const touch = event.changedTouches[0];
-  if (touch) onPointerMove(touch.clientX, touch.clientY, true);
-}, { passive: true });
+  if (!touch) return;
+  touchMoveCount += 1;
+  if (
+    pointerDownX >= 0 &&
+    Math.abs(touch.clientX - pointerDownX) > Math.abs(touch.clientY - pointerDownY) &&
+    Math.hypot(touch.clientX - pointerDownX, touch.clientY - pointerDownY) > 8
+  ) {
+    event.preventDefault();
+  }
+  onPointerMove(touch.clientX, touch.clientY, true);
+}, { passive: false });
 
 window.addEventListener('touchend', (event) => {
   if (performance.now() - lastPointerEventAt < 50) return;
