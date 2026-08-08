@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { VRM, VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import type { VRM } from '@pixiv/three-vrm';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { resume } from './data/resume';
@@ -13,6 +13,7 @@ gsap.registerPlugin(ScrollTrigger);
 const canvas = document.querySelector<HTMLCanvasElement>('#scene');
 const track = document.querySelector<HTMLElement>('#track');
 const loadingEl = document.querySelector<HTMLElement>('#loading');
+const modelStatusEl = document.querySelector<HTMLElement>('#model-status');
 
 if (!canvas || !track) {
   throw new Error('页面缺少必要元素：<canvas id="scene"> 或 <main id="track">');
@@ -80,8 +81,7 @@ scene.add(dust);
 let vrm: VRM | null = null;
 let character: THREE.Object3D | null = null;
 let characterPivot: THREE.Group | null = null;
-const MODEL_URL = 'models/character.glb?v=2';
-const FALLBACK_MODEL_URL = 'models/sample.vrm';
+const MODEL_URL = 'models/character.glb?v=3';
 const CHARACTER_BASE_Y = -0.82;
 let characterLocalY = CHARACTER_BASE_Y;
 let finalX = 0;
@@ -175,20 +175,6 @@ function setupPivotAndFraming(): void {
   computeFraming();
 }
 
-function setupVrmLookAt(loaded: VRM): void {
-  const lookTarget = new THREE.Object3D();
-  lookTarget.position.set(0, 0.55, 1.2);
-  scene.add(lookTarget);
-  if (loaded.lookAt) {
-    loaded.lookAt.target = lookTarget;
-  }
-  window.addEventListener('pointermove', (event) => {
-    const x = (event.clientX / window.innerWidth) * 2 - 1;
-    const y = -(event.clientY / window.innerHeight) * 2 + 1;
-    lookTarget.position.set(x * 1.2, 0.55 + y * 0.6, 1.2);
-  });
-}
-
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => reject(new Error(`${label}加载超时`)), ms);
@@ -227,41 +213,52 @@ function forceAlbedoMaterial(root: THREE.Object3D): void {
   });
 }
 
+let modelLoadAttempts = 0;
+let modelLoading = false;
+let modelLoaded = false;
+
+function setModelStatus(text: string, retry = false): void {
+  if (!modelStatusEl) return;
+  modelStatusEl.textContent = text;
+  modelStatusEl.classList.toggle('show', text.length > 0);
+  modelStatusEl.classList.toggle('retry', retry);
+}
+
 async function loadCharacter(): Promise<void> {
-  // 无论模型是否加载完成，最多 4 秒后放行页面，避免弱网下一直卡在加载遮罩
+  if (modelLoading || modelLoaded) return;
+  modelLoading = true;
+  modelLoadAttempts += 1;
   window.setTimeout(() => loadingEl?.classList.add('hidden'), 4000);
+  setModelStatus('3D 形象加载中…');
   try {
-    const plainLoader = new GLTFLoader();
-    plainLoader.setDRACOLoader(dracoLoader);
-    const gltf = await withTimeout(plainLoader.loadAsync(MODEL_URL), 20000, '模型');
+    const loader = new GLTFLoader();
+    loader.setDRACOLoader(dracoLoader);
+    const gltf = await withTimeout(loader.loadAsync(MODEL_URL), 60000, '模型');
     character = gltf.scene;
     vrm = null;
     forceAlbedoMaterial(character);
     normalizeCharacter();
     setupPivotAndFraming();
+    modelLoaded = true;
+    setModelStatus('');
   } catch (error) {
-    console.warn('character.glb 加载失败，回退到示例 VRM：', error);
-    try {
-      const loader = new GLTFLoader();
-      loader.setDRACOLoader(dracoLoader);
-      loader.register((parser) => new VRMLoaderPlugin(parser));
-      const gltf = await withTimeout(loader.loadAsync(FALLBACK_MODEL_URL), 20000, '备用模型');
-      const loaded = gltf.userData.vrm as VRM | undefined;
-      if (!loaded) throw new Error('该文件不是有效的 VRM 模型');
-      vrm = loaded;
-      VRMUtils.removeUnnecessaryVertices(loaded.scene);
-      character = loaded.scene;
-      forceAlbedoMaterial(character);
-      normalizeCharacter();
-      setupPivotAndFraming();
-      setupVrmLookAt(loaded);
-    } catch (fallbackError) {
-      console.error('所有模型加载失败：', fallbackError);
+    console.error('模型加载失败：', error);
+    setModelStatus('3D 形象加载失败，点此重试', true);
+    if (modelLoadAttempts < 2) {
+      window.setTimeout(() => {
+        void loadCharacter();
+      }, 8000);
     }
   } finally {
     loadingEl?.classList.add('hidden');
+    modelLoading = false;
   }
 }
+
+modelStatusEl?.addEventListener('click', () => {
+  if (modelLoaded || modelLoading) return;
+  void loadCharacter();
+});
 
 const clock = new THREE.Clock();
 

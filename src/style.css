@@ -56,6 +56,36 @@ body {
   pointer-events: none;
 }
 
+#model-status {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+#model-status.show {
+  display: flex;
+}
+
+#model-status.retry {
+  cursor: pointer;
+  color: var(--accent);
+  border: 1px solid var(--accent-soft);
+}
+
 #track {
   position: relative;
   z-index: 1;
@@ -699,6 +729,7 @@ body {
 
   #scene,
   #loading,
+  #model-status,
   .progress-dots,
   .print-btn,
   #final-accent {
