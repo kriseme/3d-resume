@@ -189,6 +189,22 @@ function setupVrmLookAt(loaded: VRM): void {
   });
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(`${label}加载超时`)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 function forceAlbedoMaterial(root: THREE.Object3D): void {
   root.traverse((object) => {
     const mesh = object as THREE.Mesh;
@@ -212,10 +228,12 @@ function forceAlbedoMaterial(root: THREE.Object3D): void {
 }
 
 async function loadCharacter(): Promise<void> {
+  // 无论模型是否加载完成，最多 4 秒后放行页面，避免弱网下一直卡在加载遮罩
+  window.setTimeout(() => loadingEl?.classList.add('hidden'), 4000);
   try {
     const plainLoader = new GLTFLoader();
     plainLoader.setDRACOLoader(dracoLoader);
-    const gltf = await plainLoader.loadAsync(MODEL_URL);
+    const gltf = await withTimeout(plainLoader.loadAsync(MODEL_URL), 20000, '模型');
     character = gltf.scene;
     vrm = null;
     forceAlbedoMaterial(character);
@@ -227,7 +245,7 @@ async function loadCharacter(): Promise<void> {
       const loader = new GLTFLoader();
       loader.setDRACOLoader(dracoLoader);
       loader.register((parser) => new VRMLoaderPlugin(parser));
-      const gltf = await loader.loadAsync(FALLBACK_MODEL_URL);
+      const gltf = await withTimeout(loader.loadAsync(FALLBACK_MODEL_URL), 20000, '备用模型');
       const loaded = gltf.userData.vrm as VRM | undefined;
       if (!loaded) throw new Error('该文件不是有效的 VRM 模型');
       vrm = loaded;
