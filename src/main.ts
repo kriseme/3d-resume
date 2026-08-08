@@ -34,6 +34,7 @@ renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 
 const scene = new THREE.Scene();
+const raycaster = new THREE.Raycaster();
 
 const FOV0 = 38;
 let camZ0 = 2.0;
@@ -84,6 +85,9 @@ const FALLBACK_MODEL_URL = 'models/sample.vrm';
 const CHARACTER_BASE_Y = -0.82;
 let characterLocalY = CHARACTER_BASE_Y;
 let finalX = 0;
+let characterHeight = 1;
+
+const BLESSINGS = ['好运 +1', '财富 +1', '幸运 +1', '美貌 +1', '快乐 +1'];
 
 const EXPRESSION_NAMES = ['happy', 'angry', 'sad', 'relaxed', 'surprised', 'neutral'] as const;
 type ExpressionName = (typeof EXPRESSION_NAMES)[number];
@@ -163,6 +167,7 @@ function setupPivotAndFraming(): void {
   characterPivot = pivot;
   const box = new THREE.Box3().setFromObject(character);
   const height = box.max.y - box.min.y;
+  characterHeight = height;
   const pivotY = CHARACTER_BASE_Y + height * 0.7;
   pivot.position.set(0, pivotY, 0);
   characterLocalY = CHARACTER_BASE_Y - pivotY;
@@ -409,6 +414,35 @@ function updateProgress(progress: number): void {
   }
 }
 
+function isCharacterHit(clientX: number, clientY: number): boolean {
+  if (!character || !canvas) return false;
+  const rect = canvas.getBoundingClientRect();
+  const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+  const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+  return raycaster.intersectObject(character, true).length > 0;
+}
+
+function spawnBlessing(x: number, y: number): void {
+  const el = document.createElement('div');
+  el.className = 'blessing-tip';
+  el.textContent = BLESSINGS[Math.floor(Math.random() * BLESSINGS.length)];
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  document.body.appendChild(el);
+  window.setTimeout(() => el.remove(), 1600);
+}
+
+function showBlessingAtHead(): void {
+  if (!character) return;
+  character.updateWorldMatrix(true, false);
+  const localHead = new THREE.Vector3(0, characterHeight, 0).applyMatrix4(character.matrixWorld);
+  const ndc = localHead.project(camera);
+  const x = ((ndc.x + 1) / 2) * window.innerWidth;
+  const y = ((-ndc.y + 1) / 2) * window.innerHeight;
+  spawnBlessing(x, y);
+}
+
 const mm = gsap.matchMedia();
 
 let targetProgress = 0;
@@ -428,23 +462,27 @@ mm.add('(min-width: 768px) and (pointer: fine)', () => {
     },
   });
 
-  const heroEl = document.querySelector<HTMLElement>('#chapter-hero');
-  const onHeroClick = (): void => {
-    const target = (track.offsetHeight - window.innerHeight) * 0.1;
-    if (window.scrollY < target - 40) {
-      window.scrollTo({ top: target, behavior: 'smooth' });
-    }
-  };
-  heroEl?.addEventListener('click', onHeroClick);
-
   updateProgress(0);
   smoothedProgress = 0;
   targetProgress = 0;
 
   return () => {
     st.kill();
-    heroEl?.removeEventListener('click', onHeroClick);
   };
+});
+
+const heroEl = document.querySelector<HTMLElement>('#chapter-hero');
+heroEl?.addEventListener('click', (event) => {
+  if (isCharacterHit(event.clientX, event.clientY)) {
+    showBlessingAtHead();
+    return;
+  }
+  if (isDesktopQuery.matches) {
+    const target = (track.offsetHeight - window.innerHeight) * 0.1;
+    if (window.scrollY < target - 40) {
+      window.scrollTo({ top: target, behavior: 'smooth' });
+    }
+  }
 });
 
 const resumeCard = document.querySelector<HTMLElement>('#resume-card');
