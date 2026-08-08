@@ -269,21 +269,21 @@ async function runDownloadWithFeedback(): Promise<void> {
   }
 }
 
-let printEventFired = false;
-window.addEventListener('beforeprint', () => {
-  printEventFired = true;
-});
+function downloadStaticResumePdf(): void {
+  const link = document.createElement('a');
+  link.href = '畅艺娜-简历.pdf';
+  link.download = '畅艺娜-简历.pdf';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
 
 document.querySelector('#print-btn')?.addEventListener('click', () => {
-  printEventFired = false;
-  window.print();
-  window.setTimeout(() => {
-    if (!printEventFired) void runDownloadWithFeedback();
-  }, 400);
+  downloadStaticResumePdf();
 });
 
 document.querySelector('#download-btn')?.addEventListener('click', () => {
-  void runDownloadWithFeedback();
+  downloadStaticResumePdf();
 });
 
 // 视频进度拖拽控制器：按视频帧率量化，且同一时间只允许一个 seek 在途，

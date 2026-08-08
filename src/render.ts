@@ -136,6 +136,38 @@ export function renderResume(data: ResumeData): void {
         .join('')}
     </section>
     <section class="resume-section">
+      <h3>INTERNSHIP · 实习经历</h3>
+      ${data.internships
+        .map(
+          (item) => `
+          <div class="resume-item item">
+            <div class="item-head">
+              <span class="item-title">${escapeHtml(item.title)}</span>
+              <span class="item-meta">${escapeHtml(item.period)}</span>
+            </div>
+            ${item.subtitle ? `<p class="item-meta">${escapeHtml(item.subtitle)}</p>` : ''}
+            <p class="item-desc">${escapeHtml(item.description)}</p>
+          </div>`,
+        )
+        .join('')}
+    </section>
+    <section class="resume-section">
+      <h3>ACTIVITIES · 学生工作</h3>
+      ${data.activities
+        .map(
+          (item) => `
+          <div class="resume-item item">
+            <div class="item-head">
+              <span class="item-title">${escapeHtml(item.title)}</span>
+              <span class="item-meta">${escapeHtml(item.period)}</span>
+            </div>
+            ${item.subtitle ? `<p class="item-meta">${escapeHtml(item.subtitle)}</p>` : ''}
+            <p class="item-desc">${escapeHtml(item.description)}</p>
+          </div>`,
+        )
+        .join('')}
+    </section>
+    <section class="resume-section">
       <h3>SKILLS · 专业技能</h3>
       <div class="tags">${data.skills.map((skill) => `<span class="tag">${escapeHtml(skill)}</span>`).join('')}</div>
     </section>
