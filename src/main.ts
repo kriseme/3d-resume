@@ -80,7 +80,7 @@ scene.add(dust);
 let vrm: VRM | null = null;
 let character: THREE.Object3D | null = null;
 let characterPivot: THREE.Group | null = null;
-const MODEL_URL = 'models/character.glb';
+const MODEL_URL = 'models/character.glb?v=2';
 const FALLBACK_MODEL_URL = 'models/sample.vrm';
 const CHARACTER_BASE_Y = -0.82;
 let characterLocalY = CHARACTER_BASE_Y;
