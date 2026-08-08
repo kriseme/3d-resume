@@ -310,6 +310,7 @@ let debugEl: HTMLDivElement | null = null;
 let lastVideoError = '';
 let touchMoveCount = 0;
 let scrubCallCount = 0;
+let mediaUnlocked = false;
 
 function frameFromClientX(clientX: number): number {
   if (videoMaxFrame <= 0) return 0;
@@ -414,7 +415,38 @@ async function tryFastVideoSource(): Promise<void> {
   const fileName = pickVideoFile();
   videoSourceStage = 'cos';
   video.src = `${COS_VIDEO_BASE}${fileName}`;
-  video.load();
+  try {
+    video.load();
+  } catch {
+    // 部分 WebView 在非手势下拒绝 load，等待首次触摸解锁
+  }
+  window.setTimeout(() => {
+    if (videoSourceStage === 'cos' && video && video.readyState === 0 && video.networkState === 0) {
+      videoSourceStage = 'github';
+      video.removeAttribute('src');
+      void tryFastVideoProxy();
+    }
+  }, 3000);
+}
+
+function tryUnlockMedia(): void {
+  if (!video || mediaUnlocked) return;
+  mediaUnlocked = true;
+  try {
+    if (video.readyState === 0) video.load();
+    video.muted = true;
+    const promise = video.play();
+    if (promise && typeof promise.then === 'function') {
+      promise
+        .then(() => {
+          video?.pause();
+          if (videoReady) resetVideoToStart();
+        })
+        .catch(() => {});
+    }
+  } catch {
+    // 首次解锁失败时忽略，后续手势仍可拖动
+  }
 }
 
 async function tryFastVideoProxy(): Promise<void> {
@@ -535,6 +567,7 @@ initDebugPanel();
 void tryFastVideoSource();
 
 function onPointerDown(clientX: number, clientY: number, isTouch: boolean): void {
+  tryUnlockMedia();
   pointerDownX = clientX;
   pointerDownY = clientY;
   pointerMoved = false;
