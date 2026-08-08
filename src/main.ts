@@ -349,6 +349,7 @@ function updateHeroInteraction(): void {
 
 function pumpVideoScrub(): void {
   if (!video || !videoReady || !heroInteractive || pendingFrame < 0) return;
+  if (performance.now() - lastSeekStartedAt < 24) return;
   const now = performance.now();
   if (scrubBusy) {
     // 防止某个 seek 事件不触发时把交互卡死
