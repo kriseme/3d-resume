@@ -398,28 +398,46 @@ async function tryFastVideoProxy(): Promise<void> {
   if (!lang.startsWith('zh')) return;
 
   const fileName = window.matchMedia('(max-width: 767px)').matches ? 'mobile.mp4' : 'landing.mp4';
+  const raw = await fetchFastVideo(fileName);
+  if (!raw) return;
 
-  for (const base of FAST_VIDEO_PROXIES) {
-    let timer = 0;
-    try {
-      const controller = new AbortController();
-      timer = window.setTimeout(() => controller.abort(), FAST_VIDEO_TIMEOUT_MS);
-      const response = await fetch(base + fileName, { signal: controller.signal });
-      if (!response.ok) continue;
-      const raw = await response.blob();
-      if (raw.size < 1024) continue;
+  const mp4 = new Blob([raw], { type: 'video/mp4' });
+  proxyVideoActive = true;
+  video.src = URL.createObjectURL(mp4);
+  video.load();
+}
 
-      const mp4 = new Blob([raw], { type: 'video/mp4' });
-      proxyVideoActive = true;
-      video.src = URL.createObjectURL(mp4);
-      video.load();
-      return;
-    } catch {
-      // 当前代理不可用，继续尝试下一个；全部失败则使用原有 <source> 回退
-    } finally {
-      window.clearTimeout(timer);
+function fetchFastVideo(fileName: string): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    let pending = FAST_VIDEO_PROXIES.length;
+
+    for (const base of FAST_VIDEO_PROXIES) {
+      void (async () => {
+        try {
+          const controller = new AbortController();
+          const timer = window.setTimeout(() => controller.abort(), FAST_VIDEO_TIMEOUT_MS);
+          try {
+            const response = await fetch(base + fileName, { signal: controller.signal });
+            if (response.ok) {
+              const blob = await response.blob();
+              if (blob.size >= 1024 && !settled) {
+                settled = true;
+                resolve(blob);
+                return;
+              }
+            }
+          } finally {
+            window.clearTimeout(timer);
+          }
+        } catch {
+          // 单个代理失败时继续等待其他代理
+        }
+        pending -= 1;
+        if (!settled && pending === 0) resolve(null);
+      })();
     }
-  }
+  });
 }
 
 video?.addEventListener('loadedmetadata', () => {
