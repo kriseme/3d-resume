@@ -24,6 +24,7 @@ const FAST_VIDEO_PROXIES = [
   'https://mirror.ghproxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://gh.llkk.cc/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
 ];
+const COS_VIDEO_BASE = 'https://nana-kriseme-videos-1465339968.cos.ap-guangzhou.myqcloud.com/videos/';
 const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 const FAST_VIDEO_TIMEOUT_MS = isWeChat ? 15000 : 10000;
 
@@ -290,7 +291,7 @@ const SCRUB_FPS = 24; // 与当前 landing.mp4 一致（8 秒 / 192 帧）
 
 let videoReady = false;
 let videoMaxFrame = 0;
-let proxyVideoActive = false;
+let videoSourceStage: 'cos' | 'proxy' | 'github' = 'github';
 let lastPointerFrame = 0;
 let pendingFrame = -1;
 let lastRequestedFrame = -1;
@@ -403,11 +404,19 @@ function initVideo(): void {
   activeSeekToken = 0;
 }
 
-async function tryFastVideoProxy(): Promise<void> {
-  if (!video || proxyVideoActive) return;
+async function tryFastVideoSource(): Promise<void> {
+  if (!video) return;
   const lang = (navigator.language || navigator.languages?.[0] || '').toLowerCase();
   if (!lang.startsWith('zh')) return;
 
+  const fileName = pickVideoFile();
+  videoSourceStage = 'cos';
+  video.src = `${COS_VIDEO_BASE}${fileName}`;
+  video.load();
+}
+
+async function tryFastVideoProxy(): Promise<void> {
+  if (!video || videoSourceStage !== 'github') return;
   const fileName = pickVideoFile();
   const raw = await fetchFastVideo(fileName);
   if (!raw) {
@@ -417,7 +426,7 @@ async function tryFastVideoProxy(): Promise<void> {
   }
 
   const mp4 = new Blob([raw], { type: 'video/mp4' });
-  proxyVideoActive = true;
+  videoSourceStage = 'proxy';
   video.src = URL.createObjectURL(mp4);
   video.load();
 }
@@ -477,8 +486,14 @@ video?.addEventListener('seeked', () => {
 video?.addEventListener('error', () => {
   videoReady = false;
   scrubBusy = false;
-  if (proxyVideoActive) {
-    proxyVideoActive = false;
+  if (videoSourceStage === 'cos') {
+    videoSourceStage = 'github';
+    video?.removeAttribute('src');
+    void tryFastVideoProxy();
+    return;
+  }
+  if (videoSourceStage === 'proxy') {
+    videoSourceStage = 'github';
     video?.removeAttribute('src');
     video!.src = `videos/${pickVideoFile()}`;
     video?.load();
@@ -489,7 +504,7 @@ if (video?.readyState != null && video.readyState >= 1) {
   initVideo();
 }
 
-void tryFastVideoProxy();
+void tryFastVideoSource();
 
 function onPointerDown(clientX: number, clientY: number, isTouch: boolean): void {
   pointerDownX = clientX;
