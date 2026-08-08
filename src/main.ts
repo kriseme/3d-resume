@@ -359,10 +359,20 @@ function flushVideoScrub(): void {
   pumpVideoScrub();
 }
 
-video?.addEventListener('loadedmetadata', () => {
+function getVideoEndTime(): number {
+  if (!video) return 0;
+  if (video.seekable.length > 0) {
+    const end = video.seekable.end(video.seekable.length - 1);
+    if (Number.isFinite(end) && end > 0) return end;
+  }
+  return Number.isFinite(video.duration) && video.duration > 0 ? video.duration : 0;
+}
+
+function initVideo(): void {
+  if (!video) return;
   videoReady = true;
   video.pause();
-  videoMaxFrame = Math.max(0, Math.round((video.duration || 0) * SCRUB_FPS) - 1);
+  videoMaxFrame = Math.max(0, Math.round(getVideoEndTime() * SCRUB_FPS) - 1);
   video.currentTime = 0;
   pendingFrame = -1;
   lastRequestedFrame = 0;
@@ -371,11 +381,18 @@ video?.addEventListener('loadedmetadata', () => {
   lastSeekStartedAt = 0;
   seekToken = 0;
   activeSeekToken = 0;
+}
+
+video?.addEventListener('loadedmetadata', () => {
+  initVideo();
 });
 
 video?.addEventListener('loadeddata', () => {
-  if (!videoReady || !Number.isFinite(video.duration) || video.duration <= 0) return;
-  videoMaxFrame = Math.max(0, Math.round(video.duration * SCRUB_FPS) - 1);
+  initVideo();
+});
+
+video?.addEventListener('durationchange', () => {
+  if (videoReady) videoMaxFrame = Math.max(0, Math.round(getVideoEndTime() * SCRUB_FPS) - 1);
 });
 
 video?.addEventListener('seeked', () => {
@@ -389,6 +406,10 @@ video?.addEventListener('error', () => {
   videoReady = false;
   scrubBusy = false;
 });
+
+if (video?.readyState != null && video.readyState >= 1) {
+  initVideo();
+}
 
 window.addEventListener('pointerdown', (event) => {
   pointerDownX = event.clientX;
