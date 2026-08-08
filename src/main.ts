@@ -16,7 +16,9 @@ const timelineSection = document.querySelector<HTMLElement>('#chapter-timeline')
 
 // 国内访问 GitHub 视频很慢：中文环境下优先从国内代理把视频拉成内存 Blob，
 // 加载和拖动都会更快；代理全部失败时自动回退到 GitHub 原地址。
+const COS_VIDEO_BASE = 'https://nana-kriseme-videos-1465339968.cos.ap-guangzhou.myqcloud.com/videos/';
 const FAST_VIDEO_PROXIES = [
+  COS_VIDEO_BASE,
   'https://ghproxy.net/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://ghfast.top/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://gh-proxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
@@ -24,7 +26,6 @@ const FAST_VIDEO_PROXIES = [
   'https://mirror.ghproxy.com/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
   'https://gh.llkk.cc/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
 ];
-const COS_VIDEO_BASE = 'https://nana-kriseme-videos-1465339968.cos.ap-guangzhou.myqcloud.com/videos/';
 const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
 const FAST_VIDEO_TIMEOUT_MS = isWeChat ? 15000 : 10000;
 
