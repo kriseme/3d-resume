@@ -37,7 +37,7 @@ body {
   height: 100%;
   object-fit: cover;
   background:
-    url('videos/poster-desktop.jpg') center / cover no-repeat,
+    url('../videos/poster-desktop.jpg') center / cover no-repeat,
     #0f1c2d;
   z-index: 0;
   pointer-events: none;
@@ -46,7 +46,7 @@ body {
 @media (max-width: 767px) {
   #bg-video {
     background:
-      url('videos/poster-mobile.jpg') center / cover no-repeat,
+      url('../videos/poster-mobile.jpg') center / cover no-repeat,
       #0f1c2d;
   }
 }

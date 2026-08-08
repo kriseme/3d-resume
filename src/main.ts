@@ -14,6 +14,14 @@ const resumeCardEl = document.querySelector<HTMLElement>('#resume-card');
 const finalAccentEl = document.querySelector<HTMLElement>('#final-accent');
 const timelineSection = document.querySelector<HTMLElement>('#chapter-timeline');
 
+// 国内访问 GitHub 视频很慢：中文环境下优先从国内代理把视频拉成内存 Blob，
+// 加载和拖动都会更快；代理全部失败时自动回退到 GitHub 原地址。
+const FAST_VIDEO_PROXIES = [
+  'https://ghproxy.net/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+  'https://ghfast.top/https://raw.githubusercontent.com/kriseme/3d-resume/main/public/videos/',
+];
+const FAST_VIDEO_TIMEOUT_MS = 10000;
+
 if (!track) {
   throw new Error('Missing required <main id="track"> element');
 }
@@ -271,6 +279,7 @@ const SCRUB_FPS = 24; // 与当前 landing.mp4 一致（8 秒 / 192 帧）
 
 let videoReady = false;
 let videoMaxFrame = 0;
+let proxyVideoActive = false;
 let lastPointerFrame = 0;
 let pendingFrame = -1;
 let lastRequestedFrame = -1;
@@ -383,6 +392,36 @@ function initVideo(): void {
   activeSeekToken = 0;
 }
 
+async function tryFastVideoProxy(): Promise<void> {
+  if (!video || proxyVideoActive) return;
+  const lang = (navigator.language || navigator.languages?.[0] || '').toLowerCase();
+  if (!lang.startsWith('zh')) return;
+
+  const fileName = window.matchMedia('(max-width: 767px)').matches ? 'mobile.mp4' : 'landing.mp4';
+
+  for (const base of FAST_VIDEO_PROXIES) {
+    let timer = 0;
+    try {
+      const controller = new AbortController();
+      timer = window.setTimeout(() => controller.abort(), FAST_VIDEO_TIMEOUT_MS);
+      const response = await fetch(base + fileName, { signal: controller.signal });
+      if (!response.ok) continue;
+      const raw = await response.blob();
+      if (raw.size < 1024) continue;
+
+      const mp4 = new Blob([raw], { type: 'video/mp4' });
+      proxyVideoActive = true;
+      video.src = URL.createObjectURL(mp4);
+      video.load();
+      return;
+    } catch {
+      // 当前代理不可用，继续尝试下一个；全部失败则使用原有 <source> 回退
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+}
+
 video?.addEventListener('loadedmetadata', () => {
   initVideo();
 });
@@ -405,11 +444,18 @@ video?.addEventListener('seeked', () => {
 video?.addEventListener('error', () => {
   videoReady = false;
   scrubBusy = false;
+  if (proxyVideoActive) {
+    proxyVideoActive = false;
+    video?.removeAttribute('src');
+    video?.load();
+  }
 });
 
 if (video?.readyState != null && video.readyState >= 1) {
   initVideo();
 }
+
+void tryFastVideoProxy();
 
 window.addEventListener('pointerdown', (event) => {
   pointerDownX = event.clientX;
